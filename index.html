@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game Loading Screen - AAA Edition</title>
+    <style>
+        /* --- 1. PALET WARNA (Sesuai Tema) --- */
+        :root {
+            --gold: #ffd700;
+            --gold-dark: #d4af37;
+            --brown: #8b4513;
+            --brown-dark: #5c2a0d;
+            --green: #4caf50;
+            --green-dark: #2e7d32;
+            --blue: #1976d2;
+            --blue-dark: #0d47a1;
+            --red: #d32f2f;
+            --red-dark: #b71c1c;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* --- 2. LATAR BELAKANG DINAMIS --- */
+        body {
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            background-color: #000; 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        /* Container khusus untuk background agar bisa dipudarkan (fade-out) bersama loader */
+        #bg-container {
+            position: fixed;
+            inset: 0;
+            z-index: 1;
+            background-image: 
+                radial-gradient(circle at 25% 20%, rgba(255, 255, 255, 0.12) 0%, transparent 10%),
+                radial-gradient(circle at 75% 15%, rgba(255, 255, 255, 0.15) 0%, transparent 15%),
+                radial-gradient(circle at 50% 30%, rgba(255, 255, 255, 0.1) 0%, transparent 20%),
+                linear-gradient(to bottom, #0d1b2a 0%, #1b4965 45%, #4caf50 45.2%, #2e7d32 100%);
+            transition: opacity 0.8s ease-in-out;
+        }
+
+        #bg-container::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.3), transparent), url('paths/path_01.png');
+            background-size: cover;
+            background-position: center;
+            filter: blur(2px);
+            opacity: 0.2;
+            pointer-events: none;
+        }
+
+        /* --- 3. ELEMEN PEMUATAN (UI) --- */
+        #loader-wrapper {
+            position: relative;
+            z-index: 10;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 25px;
+            transition: opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1), transform 0.6s ease;
+        }
+
+        /* Animasi masuk awal dan efek mengambang (floating) */
+        .logo-container {
+            width: 400px;
+            max-width: 85vw;
+            aspect-ratio: 6 / 1;
+            background-image: url('logo.png');
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            animation: 
+                popIn 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards,
+                float 4s ease-in-out infinite 0.8s;
+            filter: drop-shadow(0px 10px 15px rgba(0,0,0,0.5));
+        }
+
+        .progress-container {
+            width: 320px;
+            max-width: 80vw;
+            height: 18px;
+            background-color: var(--brown-dark);
+            border: 2px solid var(--gold-dark);
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 0 15px rgba(212, 175, 55, 0.3);
+            position: relative;
+            animation: fadeIn 1s ease 0.5s both;
+        }
+
+        .progress-bar {
+            width: 0%;
+            height: 100%;
+            background: linear-gradient(90deg, var(--gold-dark), var(--gold), #fff, var(--gold));
+            background-size: 200% 100%;
+            border-radius: 6px;
+            /* Efek kilauan (Shimmer effect) di dalam bar */
+            animation: shimmer 2s linear infinite;
+        }
+
+        /* Teks Status dan Persentase */
+        .loading-info {
+            display: flex;
+            justify-content: space-between;
+            width: 320px;
+            max-width: 80vw;
+            color: var(--gold);
+            font-size: 0.9rem;
+            font-weight: 600;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.8);
+            animation: fadeIn 1s ease 0.5s both;
+        }
+
+        /* --- 4. KEYFRAMES ANIMASI --- */
+        @keyframes popIn {
+            0% { opacity: 0; transform: scale(0.8) translateY(20px); }
+            100% { opacity: 1; transform: scale(1) translateY(0); }
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        @keyframes shimmer {
+            0% { background-position: 100% 0; }
+            100% { background-position: -100% 0; }
+        }
+
+        /* Kelas untuk menyembunyikan loader secara halus */
+        .fade-out {
+            opacity: 0 !important;
+            transform: scale(1.05);
+            pointer-events: none;
+        }
+
+        /* --- 5. IFRAME UTAMA --- */
+        #game-frame {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: none;
+            z-index: 5;
+            opacity: 0; /* Mulai transparan */
+            transition: opacity 1s ease-in; /* Fade in secara halus */
+        }
+        
+        .fade-in {
+            opacity: 1 !important;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Latar Belakang Terpisah agar bisa dipudarkan -->
+    <div id="bg-container"></div>
+
+    <!-- Layar Loading Utama -->
+    <div id="loader-wrapper">
+        <div class="logo-container"></div>
+        
+        <div class="loading-wrapper">
+            <div class="loading-info">
+                <span id="loading-text">Menghubungkan...</span>
+                <span id="loading-percent">0%</span>
+            </div>
+            <div class="progress-container" style="margin-top: 8px;">
+                <div class="progress-bar" id="progress-bar"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Iframe Game Utama -->
+    <iframe id="game-frame" src="about:blank"></iframe>
+
+    <script>
+        window.addEventListener('DOMContentLoaded', () => {
+            const loadingDuration = 3000; // Durasi emas (3 Detik)
+            
+            const progressBar = document.getElementById('progress-bar');
+            const percentText = document.getElementById('loading-percent');
+            const statusText = document.getElementById('loading-text');
+            const loaderWrapper = document.getElementById('loader-wrapper');
+            const bgContainer = document.getElementById('bg-container');
+            const iframe = document.getElementById('game-frame');
+
+            // Array teks status yang disesuaikan dengan durasi 3 detik
+            const statusMessages = [
+                "Menginisialisasi Mesin...", 
+                "Memuat Lanskap...", 
+                "Menyusun Aset Visual...", 
+                "Membangun Interaksi...",
+                "Mengoptimalkan Rendering...",
+                "Siap Dimainkan!"
+            ];
+
+            // Mulai memuat iframe di latar belakang
+            iframe.src = "mainmenu.html";
+
+            // Logika Counter Persentase dengan Efek Realistis (Micro-Stutter/Ease-Out)
+            let startTime = null;
+
+            function updateProgress(currentTime) {
+                if (!startTime) startTime = currentTime;
+                const elapsed = currentTime - startTime;
+                
+                // Waktu berjalan dari 0.0 ke 1.0
+                let t = Math.min(elapsed / loadingDuration, 1);
+                
+                // Menerapkan fungsi Ease-Out (Cepat di awal 70%, melambat di akhir)
+                // Rumus cubic ease-out: 1 - (1 - t)^3
+                let easeOutProgress = 1 - Math.pow(1 - t, 3);
+                
+                // Kalkulasi persentase (0 hingga 100)
+                let progress = Math.min(easeOutProgress * 100, 100);
+                
+                // Update Lebar Bar & Teks Persentase
+                progressBar.style.width = `${progress}%`;
+                percentText.innerText = `${Math.floor(progress)}%`;
+
+                // Update Teks Status Dinamis berdasarkan progres saat ini
+                const messageIndex = Math.min(
+                    Math.floor((progress / 100) * statusMessages.length), 
+                    statusMessages.length - 1
+                );
+                statusText.innerText = statusMessages[messageIndex];
+
+                if (progress < 100) {
+                    requestAnimationFrame(updateProgress); // Lanjutkan loop animasi
+                } else {
+                    // Beri jeda kecil agar angka 100% sempat terbaca sebelum transisi
+                    setTimeout(transitionToGame, 300);
+                }
+            }
+
+            // Jalankan animasi JS
+            requestAnimationFrame(updateProgress);
+
+            // Fungsi Transisi Halus
+            function transitionToGame() {
+                // Fade out UI dan Background
+                loaderWrapper.classList.add('fade-out');
+                bgContainer.style.opacity = '0';
+
+                // Fade in Iframe Game
+                iframe.classList.add('fade-in');
+
+                // Bersihkan DOM dari memori setelah transisi CSS selesai (1 detik)
+                setTimeout(() => {
+                    loaderWrapper.style.display = 'none';
+                    bgContainer.style.display = 'none';
+                }, 1000); 
+            }
+        });
+    </script>
+</body>
+</html>
