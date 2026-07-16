@@ -152,6 +152,10 @@
     #messageModal .popup-box{ max-width: 360px; }
     #msgModalText{ font-size: 14px; line-height:1.5; color:#fff; font-weight:900; text-align:center; text-shadow:2px 2px 0 #000; }
     
+    /* Style Tambahan untuk Tombol Pilihan Aplikasi */
+    .app-choice-stack { display: flex; flex-direction: column; gap: 10px; width: 100%; margin: 8px 0; }
+    .btn-choice { text-align: left; justify-content: flex-start; padding: 14px; font-size: 13px; }
+    
     ::-webkit-scrollbar { width: 8px; }
     ::-webkit-scrollbar-track { background: rgba(0,0,0,.3); border-radius: 4px; }
     ::-webkit-scrollbar-thumb { background: var(--gold); border-radius: 4px; border: 1px solid #000; }
@@ -205,6 +209,15 @@
           </div>
           <div class="right" style="display:flex; align-items:center; gap:8px;">
           </div>
+        </button>
+
+        <!-- TOMBOL GRUP FACEBOOK (BARU)[span_1](start_span)[span_1](end_span) -->
+        <button class="menu-entry" onclick="openFacebookModal()">
+          <div class="left">
+            <div class="title">Komunitas</div>
+            <div class="desc">Hubungi Dev & User Lain</div>
+          </div>
+          <div class="right">💬</div>
         </button>
       </section>
     </main>
@@ -272,6 +285,20 @@
         <div class="coin-display" id="shopCoinDisplay" style="margin: 0 auto 10px auto; justify-content:center;">COINS: 0</div>
         <div id="shopContent" class="modal-stack"></div>
         <button class="btn btn-red btn-inline" onclick="closeShop()">Tutup</button>
+      </div>
+    </div>
+
+    <!-- MODAL BUKA FACEBOOK (BARU)[span_2](start_span)[span_2](end_span) -->
+    <div class="popup-overlay" id="facebookModal">
+      <div class="popup-box" style="max-width: 360px;">
+        <div class="popup-title">Buka Komunitas</div>
+        <div style="font-size: 11px; text-align: center; color: #ddd; text-shadow: 1px 1px 0 #000; margin-bottom: 5px;">PILIH APLIKASI UNTUK MEMBUKA GRUP:</div>
+        <div class="app-choice-stack">
+          <button class="btn btn-choice" onclick="launchFacebook('ori')">📱 Facebook Ori</button>
+          <button class="btn btn-choice" onclick="launchFacebook('lite')">⚡ Facebook Lite</button>
+          <button class="btn btn-choice" onclick="launchFacebook('browser')">🌐 Browser Perangkat</button>
+        </div>
+        <button class="btn btn-red btn-inline" onclick="closeModal('facebookModal')">Batal</button>
       </div>
     </div>
 
@@ -597,12 +624,37 @@
 
       let itemHTML = `<div class="shop-section"><div class="shop-section-title">Item Bantuan</div>`;
       const itemPrices = { snail_bait: 200, antidead: 1000, stalestill: 800, glidesteps: 300, incognito: 500 };
-      const itemDescs = { snail_bait: "Siput cepat", antidead: "Nyawa tambahan", stalestill: "Lumpuhkan lawan", glidesteps: "Meluncur", incognito: "Langkah senyap" };
+      const itemDescs = { snail_bait: "Spawn Siput lebih cepat", antidead: "Untuk bangkit dari kematian", stalestill: "Untuk Diam di tempat", glidesteps: "Untuk meluncur di arena", incognito: "Langkah tanpa jejak" };
       Object.keys(ITEM_METADATA).forEach(id => {
         let count = itemsInventory[id], meta = ITEM_METADATA[id], isFull = count >= meta.max;
         itemHTML += `<div class="shop-item-row"><div class="shop-item-info"><div class="shop-item-icon" style="background:#000;"><img src="${meta.img}" onerror="this.src='characters/bob/idle_1.png'"></div><div style="min-width:0;"><div style="font-weight:900; color:var(--gold); text-transform:uppercase; font-size:12px; text-shadow:1px 1px 0 #000;">${meta.name}</div><div style="font-size:10px; color:#ddd;">${itemDescs[id]}</div><div style="font-size:11px; color:#4caf50; font-weight:900; text-shadow:1px 1px 0 #000;">Stok: ${count}/${meta.max}</div></div></div>${isFull ? `<button class="btn shop-btn" disabled style="background:#555; border-color:#888;">PENUH</button>` : `<button class="btn btn-green shop-btn" onclick="buyItem('item', '${id}', ${itemPrices[id]})">${COIN_IMG} ${itemPrices[id]}</button>`}</div>`;
       });
       content.innerHTML = charHTML + pathHTML + itemHTML;
+    }
+
+        // Fungsi Pengarah ke Facebook
+    function openFacebookModal() {
+      openModal('facebookModal');
+    }
+
+    function launchFacebook(type) {
+      const groupId = "1070738102191282";
+      const webUrl = "https://www.facebook.com/groups/" + groupId + "/";
+      
+      if (type === 'ori') {
+        // Deep linking untuk FB Standar Android/iOS
+        window.location.href = "fb://group/" + groupId;
+        // Fallback jika aplikasi tidak terinstall (membuka tab baru setelah 1 detik)
+        setTimeout(function() { window.open(webUrl, '_blank'); }, 1000);
+      } else if (type === 'lite') {
+        // Deep linking khusus FB Lite
+        window.location.href = "fb://page/" + groupId; 
+        setTimeout(function() { window.open(webUrl, '_blank'); }, 1000);
+      } else {
+        // Pilihan Browser
+        window.open(webUrl, '_blank');
+      }
+      closeModal('facebookModal');
     }
 
     // Start
