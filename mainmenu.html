@@ -156,6 +156,36 @@
     .app-choice-stack { display: flex; flex-direction: column; gap: 10px; width: 100%; margin: 8px 0; }
     .btn-choice { text-align: left; justify-content: flex-start; padding: 14px; font-size: 13px; }
     
+    /* Style untuk Range Slider Pengaturan Audio */
+    input[type=range] {
+      -webkit-appearance: none;
+      width: 100%;
+      background: transparent;
+      margin: 8px 0;
+    }
+    input[type=range]:focus {
+      outline: none;
+    }
+    input[type=range]::-webkit-slider-runnable-track {
+      width: 100%;
+      height: 8px;
+      cursor: pointer;
+      background: #000;
+      border-radius: 4px;
+      border: 1px solid rgba(255,215,0,.3);
+    }
+    input[type=range]::-webkit-slider-thumb {
+      height: 18px;
+      width: 18px;
+      border-radius: 50%;
+      background: var(--gold);
+      border: 2px solid #000;
+      cursor: pointer;
+      -webkit-appearance: none;
+      margin-top: -6px;
+      box-shadow: 1px 1px 0 rgba(0,0,0,.5);
+    }
+
     ::-webkit-scrollbar { width: 8px; }
     ::-webkit-scrollbar-track { background: rgba(0,0,0,.3); border-radius: 4px; }
     ::-webkit-scrollbar-thumb { background: var(--gold); border-radius: 4px; border: 1px solid #000; }
@@ -182,7 +212,7 @@
             <div class="title">Mainkan</div>
             <div class="desc">Masuk ke arena sekarang</div>
           </div>
-          <div class="right">▶</div>
+          <div class="right">⚔️</div>
         </button>
         
         <button class="menu-entry" onclick="openModeModal()">
@@ -193,7 +223,6 @@
           <div class="right" id="dashModeText">VS AI</div>
         </button>
         
-        <!-- Penampil gambar Path dihapus di sini, diganti dengan hanya menyisakan textnya -->
         <button class="menu-entry" onclick="openPathModal()">
           <div class="left">
             <div class="title">Arena</div>
@@ -211,13 +240,21 @@
           </div>
         </button>
 
-        <!-- TOMBOL GRUP FACEBOOK (BARU)[span_1](start_span)[span_1](end_span) -->
         <button class="menu-entry" onclick="openFacebookModal()">
           <div class="left">
             <div class="title">Komunitas</div>
             <div class="desc">Hubungi Dev & User Lain</div>
           </div>
-          <div class="right">💬</div>
+          <div class="right">👥</div>
+        </button>
+
+        <!-- TOMBOL PENGATURAN -->
+        <button class="menu-entry" onclick="openSettingsModal()">
+          <div class="left">
+            <div class="title">Pengaturan</div>
+            <div class="desc">Atur suara dan musik</div>
+          </div>
+          <div class="right">⚙️</div>
         </button>
       </section>
     </main>
@@ -288,17 +325,50 @@
       </div>
     </div>
 
-    <!-- MODAL BUKA FACEBOOK (BARU)[span_2](start_span)[span_2](end_span) -->
+    <!-- MODAL BUKA FACEBOOK -->
     <div class="popup-overlay" id="facebookModal">
       <div class="popup-box" style="max-width: 360px;">
         <div class="popup-title">Buka Komunitas</div>
         <div style="font-size: 11px; text-align: center; color: #ddd; text-shadow: 1px 1px 0 #000; margin-bottom: 5px;">PILIH APLIKASI UNTUK MEMBUKA GRUP:</div>
         <div class="app-choice-stack">
           <button class="btn btn-choice" onclick="launchFacebook('ori')">📱 Facebook Ori</button>
-          <button class="btn btn-choice" onclick="launchFacebook('lite')">⚡ Facebook Lite</button>
+          <button class="btn btn-choice" onclick="launchFacebook('lite')">📄 Facebook Lite</button>
           <button class="btn btn-choice" onclick="launchFacebook('browser')">🌐 Browser Perangkat</button>
         </div>
         <button class="btn btn-red btn-inline" onclick="closeModal('facebookModal')">Batal</button>
+      </div>
+    </div>
+
+    <!-- MODAL PENGATURAN AUDIO -->
+    <div class="popup-overlay" id="settingsModal">
+      <div class="popup-box" style="max-width: 340px;">
+        <div class="popup-title">Pengaturan Audio</div>
+        
+        <div style="display:flex; flex-direction:column; gap:16px; margin: 10px 0;">
+          <!-- Toggle BGM -->
+          <div style="display:flex; align-items:center; justify-content:space-between;">
+             <div style="font-weight:900; color:#fff; text-shadow:1px 1px 0 #000; letter-spacing:1px;">MUSIK (BGM)</div>
+             <button id="bgmToggleBtn" class="btn btn-green" style="padding: 6px 12px; font-size: 12px;" onclick="toggleBgm()">NYALA</button>
+          </div>
+          
+          <!-- Volume BGM -->
+          <div>
+             <div style="font-weight:900; color:var(--gold); text-shadow:1px 1px 0 #000; font-size:12px; margin-bottom:2px; display:flex; justify-content:space-between;">
+               <span>VOLUME BGM</span> <span id="bgmVolDisplay">100%</span>
+             </div>
+             <input type="range" id="bgmVolSlider" min="0" max="1" step="0.05" oninput="updateBgmVolume(this.value)">
+          </div>
+          
+          <!-- Volume SFX -->
+          <div>
+             <div style="font-weight:900; color:var(--gold); text-shadow:1px 1px 0 #000; font-size:12px; margin-bottom:2px; display:flex; justify-content:space-between;">
+               <span>VOLUME KLIK (SFX)</span> <span id="sfxVolDisplay">100%</span>
+             </div>
+             <input type="range" id="sfxVolSlider" min="0" max="1" step="0.05" oninput="updateSfxVolume(this.value)">
+          </div>
+        </div>
+
+        <button class="btn btn-blue btn-inline" onclick="closeSettingsModal()">Simpan & Tutup</button>
       </div>
     </div>
 
@@ -370,10 +440,10 @@
     // Events
     document.addEventListener('click', (e) => {
       if (e.target.closest('.btn, .menu-entry, .roller-card, .mode-switch-track, .char-tab-btn, .character-dock')) {
-        audio.click.currentTime = 0; audio.click.play().catch(()=>{});
+        audio.click.currentTime = 0; 
+        audio.click.play().catch(()=>{});
       }
     });
-    document.body.addEventListener('click', () => { if (audio.menu.paused) audio.menu.play().catch(()=>{}); }, { once: true });
 
     // UI Updates
     function updateDashboard() {
@@ -632,7 +702,7 @@
       content.innerHTML = charHTML + pathHTML + itemHTML;
     }
 
-        // Fungsi Pengarah ke Facebook
+    // Fungsi Pengarah ke Facebook
     function openFacebookModal() {
       openModal('facebookModal');
     }
@@ -642,16 +712,12 @@
       const webUrl = "https://www.facebook.com/groups/" + groupId + "/";
       
       if (type === 'ori') {
-        // Deep linking untuk FB Standar Android/iOS
         window.location.href = "fb://group/" + groupId;
-        // Fallback jika aplikasi tidak terinstall (membuka tab baru setelah 1 detik)
         setTimeout(function() { window.open(webUrl, '_blank'); }, 1000);
       } else if (type === 'lite') {
-        // Deep linking khusus FB Lite
         window.location.href = "fb://page/" + groupId; 
         setTimeout(function() { window.open(webUrl, '_blank'); }, 1000);
       } else {
-        // Pilihan Browser
         window.open(webUrl, '_blank');
       }
       closeModal('facebookModal');
@@ -664,6 +730,81 @@
       let itemsToActive = { snailBaitActive: itemsInventory.snail_bait > 0, antideadActive: itemsInventory.antidead > 0, stalestillActive: itemsInventory.stalestill > 0, glidestepsActive: itemsInventory.glidesteps > 0, incognitoActive: itemsInventory.incognito > 0 };
       localStorage.setItem('tether_game_config', JSON.stringify({ mode: state.mode, p1Char: state.p1Char, p2Char: state.p2Char, pathTheme: state.pathTheme, ...itemsToActive }));
       window.location.href = 'gameplay.html';
+    }
+
+    // ==========================================
+    // PENGATURAN AUDIO (BGM & SFX)
+    // ==========================================
+    let audioSettings = JSON.parse(localStorage.getItem('tether_audio_settings')) || { 
+      bgmOn: true, 
+      bgmVol: 1.0, 
+      sfxVol: 1.0 
+    };
+
+    function applyAudioSettings() {
+      audio.menu.volume = audioSettings.bgmOn ? audioSettings.bgmVol : 0;
+      audio.click.volume = audioSettings.sfxVol;
+
+      // Sinkronisasi UI
+      const bgmBtn = document.getElementById('bgmToggleBtn');
+      if (bgmBtn) {
+        bgmBtn.innerText = audioSettings.bgmOn ? "NYALA" : "MATI";
+        bgmBtn.className = audioSettings.bgmOn ? "btn btn-green" : "btn btn-red";
+      }
+      const bgmSlider = document.getElementById('bgmVolSlider');
+      if (bgmSlider) {
+        bgmSlider.value = audioSettings.bgmVol;
+        document.getElementById('bgmVolDisplay').innerText = Math.round(audioSettings.bgmVol * 100) + '%';
+      }
+      const sfxSlider = document.getElementById('sfxVolSlider');
+      if (sfxSlider) {
+        sfxSlider.value = audioSettings.sfxVol;
+        document.getElementById('sfxVolDisplay').innerText = Math.round(audioSettings.sfxVol * 100) + '%';
+      }
+    }
+
+    function openSettingsModal() {
+      applyAudioSettings();
+      openModal('settingsModal');
+    }
+
+    function closeSettingsModal() {
+      closeModal('settingsModal');
+    }
+
+    function toggleBgm() {
+      audioSettings.bgmOn = !audioSettings.bgmOn;
+      if (audioSettings.bgmOn) {
+        audio.menu.play().catch(()=>{});
+      } else {
+        audio.menu.pause();
+      }
+      saveAudioSettings();
+    }
+
+    function updateBgmVolume(val) {
+      audioSettings.bgmVol = parseFloat(val);
+      if (audioSettings.bgmOn) audio.menu.volume = audioSettings.bgmVol;
+      document.getElementById('bgmVolDisplay').innerText = Math.round(audioSettings.bgmVol * 100) + '%';
+      saveAudioSettings();
+    }
+
+    function updateSfxVolume(val) {
+      audioSettings.sfxVol = parseFloat(val);
+      audio.click.volume = audioSettings.sfxVol;
+      document.getElementById('sfxVolDisplay').innerText = Math.round(audioSettings.sfxVol * 100) + '%';
+      saveAudioSettings();
+    }
+
+    function saveAudioSettings() {
+      localStorage.setItem('tether_audio_settings', JSON.stringify(audioSettings));
+      applyAudioSettings();
+    }
+
+    // Eksekusi Autoplay Audio saat pertama kali diload
+    applyAudioSettings();
+    if (audioSettings.bgmOn) {
+      audio.menu.play().catch(e => console.warn("Browser menolak autoplay:", e));
     }
     
     updateDashboard();
