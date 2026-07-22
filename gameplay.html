@@ -303,10 +303,15 @@
       
       matchListenerUnsub = window.listenOnlineMatchState(activeMatchId, (data) => {
         if (data.gameState) {
+          let prevPhase = gameState.phase;
           gameState.phase = data.gameState.phase;
           gameState.turn = (data.currentTurnUid === window.currentUser.uid) ? 0 : 1;
           gameState.burned = new Map(JSON.parse(data.gameState.burnedArr || "[]"));
           
+          if (prevPhase !== 'play' && gameState.phase === 'play') {
+            unifiedAudio.play.play().catch(()=>{});
+          }
+
           let prevP2X = gameState.players[1].x;
           let prevP2Y = gameState.players[1].y;
 
@@ -488,6 +493,11 @@
       const p1X = gameState.isChallenger ? gameState.players[0].x : gameState.players[1].x, p1Y = gameState.isChallenger ? gameState.players[0].y : gameState.players[1].y;
       const p2X = gameState.isChallenger ? gameState.players[1].x : gameState.players[0].x, p2Y = gameState.isChallenger ? gameState.players[1].y : gameState.players[0].y;
       let nextPhase = gameState.phase; if (gameState.phase === 'place' && p1X !== null && p2X !== null) nextPhase = 'play';
+      
+      if (gameState.phase !== 'play' && nextPhase === 'play') {
+          unifiedAudio.play.play().catch(()=>{});
+      }
+
       const statePayload = { phase: nextPhase, p1X, p1Y, p2X, p2Y, burnedArr: JSON.stringify(Array.from(gameState.burned.entries())) };
       const opponentUid = gameState.players[1].uid;
       await window.updateOnlineGameStateCloud(activeMatchId, statePayload, opponentUid);
@@ -526,10 +536,38 @@
     }
     
     function triggerAntidead(pIndex) {
-      if (pIndex === 0) gameState.antideadActive = false;
+      if (pIndex === 0) {
+        gameState.antideadActive = false;
+        // Fix: Kurangi item antidead saat dibangkitkan untuk menutup celah ekploitasi
+        if (itemsInventory.antidead > 0) {
+            itemsInventory.antidead--;
+            window.userData.items = itemsInventory;
+            saveLocalData();
+            renderEquipment();
+        }
+      }
+
       const p = gameState.players[pIndex];
-      const powEl = document.createElement('div'); powEl.className = 'pow-anim'; powEl.style.transform = `translate(calc(${p.x} * 100%), calc(${p.y} * 100%))`; powEl.style.zIndex = 300; powEl.innerHTML = '<img src="items/antidead.png" style="width:180%; height:180%; filter: drop-shadow(0 0 10px gold); animation: popOpen 0.5s;">'; el.piecesLayer.appendChild(powEl); setTimeout(() => powEl.remove(), 800);
-      for (let dx = -1; dx <= 1; dx++) { for (let dy = -1; dy <= 1; dy++) { let k = key(p.x + dx, p.y + dy); if (gameState.burned.has(k)) gameState.burned.delete(k); } }
+      const powEl = document.createElement('div'); 
+      powEl.className = 'pow-anim'; 
+      powEl.style.position = 'absolute';
+      powEl.style.width = 'calc(100% / var(--grid-size))';
+      powEl.style.height = 'calc(100% / var(--grid-size))';
+      powEl.style.display = 'flex';
+      powEl.style.alignItems = 'center';
+      powEl.style.justifyContent = 'center';
+      powEl.style.transform = `translate(calc(${p.x} * 100%), calc(${p.y} * 100%))`; 
+      powEl.style.zIndex = 300; 
+      powEl.innerHTML = '<img src="items/antidead.png" style="width:180%; height:180%; filter: drop-shadow(0 0 10px gold); animation: popOpen 0.5s;">'; 
+      el.piecesLayer.appendChild(powEl); 
+      setTimeout(() => powEl.remove(), 800);
+
+      for (let dx = -1; dx <= 1; dx++) { 
+        for (let dy = -1; dy <= 1; dy++) { 
+          let k = key(p.x + dx, p.y + dy); 
+          if (gameState.burned.has(k)) gameState.burned.delete(k); 
+        } 
+      }
       gameState.turn = 0; updateUI();
       if (isOnlinePVP) syncOnlineMove();
     }
@@ -613,8 +651,29 @@
     
     function useStalestill() {
         if (gameState.phase !== 'play') return;
-        gameState.turn = 1 - gameState.turn; unifiedAudio.click.currentTime = 0; unifiedAudio.click.play().catch(()=>{});
-        if (isOnlinePVP) syncOnlineMove(); else { checkWin(); updateUI(); if (gameState.phase === 'play' && gameState.turn === 1) setTimeout(aiMove, 600); }
+
+        // Animasi Stalestill dengan glow warna merah
+        const p = gameState.players[0];
+        const powEl = document.createElement('div'); 
+        powEl.className = 'pow-anim'; 
+        powEl.style.position = 'absolute';
+        powEl.style.width = 'calc(100% / var(--grid-size))';
+        powEl.style.height = 'calc(100% / var(--grid-size))';
+        powEl.style.display = 'flex';
+        powEl.style.alignItems = 'center';
+        powEl.style.justifyContent = 'center';
+        powEl.style.transform = `translate(calc(${p.x} * 100%), calc(${p.y} * 100%))`;
+        powEl.style.zIndex = 300;
+        powEl.innerHTML = '<img src="items/stalestill.png" style="width:180%; height:180%; filter: drop-shadow(0 0 10px red); animation: popOpen 0.5s;">';
+        el.piecesLayer.appendChild(powEl);
+        setTimeout(() => powEl.remove(), 800);
+
+        gameState.turn = 1 - gameState.turn; 
+        unifiedAudio.click.currentTime = 0; 
+        unifiedAudio.click.play().catch(()=>{});
+        
+        if (isOnlinePVP) syncOnlineMove(); 
+        else { checkWin(); updateUI(); if (gameState.phase === 'play' && gameState.turn === 1) setTimeout(aiMove, 600); }
     }
     
     function updateUI() {
