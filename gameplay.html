@@ -185,11 +185,11 @@
     try {
       const { initializeApp } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js");
       const { getAuth, onAuthStateChanged } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js");
-      const { getFirestore, doc, updateDoc, onSnapshot, deleteDoc } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
+      const { getFirestore, doc, updateDoc, setDoc, onSnapshot, deleteDoc } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
       const app = initializeApp(firebaseConfig);
       const auth = getAuth(app);
       const db = getFirestore(app);
-      window.fbDb = db; window.fbUpdateDoc = updateDoc; window.fbDoc = doc; window.fbDeleteDoc = deleteDoc; window.isFirebaseReady = true;
+      window.fbDb = db; window.fbUpdateDoc = updateDoc; window.fbSetDoc = setDoc; window.fbDoc = doc; window.fbDeleteDoc = deleteDoc; window.isFirebaseReady = true;
 
       onAuthStateChanged(auth, (user) => { if (user) window.currentUser = user; else window.currentUser = null; });
 
@@ -218,6 +218,19 @@
     }
     function saveLocalData() { if (window.userData) localStorage.setItem('tiletether_local_data', JSON.stringify(window.userData)); }
     
+    async function syncUserDataToServer() {
+      if (window.isFirebaseReady && window.currentUser) {
+        try {
+          await window.fbSetDoc(window.fbDoc(window.fbDb, "users", window.currentUser.uid), {
+            coins: window.userData.coins || 0,
+            items: window.userData.items || { antidead: 0, stalestill: 0, glidesteps: 0 },
+            wins: window.userData.wins || 0,
+            losses: window.userData.losses || 0
+          }, { merge: true });
+        } catch(err) { console.warn("Gagal sync data pengguna ke server", err); }
+      }
+    }
+
     window.userData = loadLocalSave();
     let totalCoins = window.userData.coins || 0;
     let itemsInventory = window.userData.items || { antidead: 0, stalestill: 0, glidesteps: 0 };
@@ -286,7 +299,7 @@
     }
 
     function bootGameplay(config) {
-        gameState = { size: 10, phase: 'place', turn: 0, burned: new Map(), players: [], tick: 0, p1Char: config.p1Char, pathTheme: config.pathTheme, startTime: 0, antideadActive: false, glidestepsActive: false, stalestillActive: false, stalestillCharges: 0, itemsConsumed: false };
+        gameState = { size: 10, phase: 'place', turn: 0, burned: new Map(), players: [], tick: 0, p1Char: config.p1Char, pathTheme: config.pathTheme, startTime: 0, antideadActive: false, glidestepsActive: false, glidestepsCharges: 0, stalestillActive: false, stalestillCharges: 0, stalestillUsed: false };
         initGame();
         if(gameTickInterval) clearInterval(gameTickInterval);
         gameTickInterval = setInterval(gameLoopTick, 150);
@@ -294,7 +307,7 @@
 
     function bootOnlineGameplay(matchData, isChallenger) {
       if(!window.isFirebaseReady) { alert("Firebase disconnected."); exitToMenu(); return; }
-      gameState = { size: 10, phase: 'place', turn: 0, burned: new Map(), players: [], tick: 0, pathTheme: window.userData.selectedPath || 'path_01', startTime: Date.now(), isOnline: true, isChallenger: isChallenger, matchData: matchData, antideadActive: equippedSlots.includes('antidead'), itemsConsumed: false };
+      gameState = { size: 10, phase: 'place', turn: 0, burned: new Map(), players: [], tick: 0, pathTheme: window.userData.selectedPath || 'path_01', startTime: Date.now(), isOnline: true, isChallenger: isChallenger, matchData: matchData, stalestillUsed: false };
       const oppChar = isChallenger ? matchData.targetChar : matchData.challengerChar;
       gameState.players = [ { name: window.userData.selectedChar || 'bob', x: null, y: null, pose: 'idle', uid: window.currentUser ? window.currentUser.uid : 'guest' }, { name: oppChar || 'alice', x: null, y: null, pose: 'idle', uid: isChallenger ? matchData.targetUid : matchData.challengerUid } ];
       initGameOnline();
@@ -312,6 +325,14 @@
             unifiedAudio.play.play().catch(()=>{});
           }
 
+          // Mengecek trigger animasi dari event lawan (Sync Animation)
+          if (data.gameState.itemAnim && data.gameState.itemAnim.ts > (gameState.lastItemEventTs || 0)) {
+              gameState.lastItemEventTs = data.gameState.itemAnim.ts;
+              let anim = data.gameState.itemAnim;
+              let glowColor = anim.type === 'antidead' ? 'gold' : 'red';
+              playItemAnimation(anim.x, anim.y, anim.type, glowColor);
+          }
+
           let prevP2X = gameState.players[1].x;
           let prevP2Y = gameState.players[1].y;
 
@@ -320,7 +341,6 @@
           gameState.players[1].x = isChallenger ? data.gameState.p2X : data.gameState.p1X;
           gameState.players[1].y = isChallenger ? data.gameState.p2Y : data.gameState.p1Y;
 
-          // Sync animasi lompatan musuh online
           if (gameState.phase === 'play' && (gameState.players[1].x !== prevP2X || gameState.players[1].y !== prevP2Y) && prevP2X !== null) {
               gameState.players[1].pose = 'jump';
               setTimeout(() => { if (gameState.phase !== 'over') { gameState.players[1].pose = 'idle'; updatePiecesLayer(); } }, 350);
@@ -343,16 +363,30 @@
       }
     }
 
-    function consumeItems() {
-        if (gameState.itemsConsumed) return;
-        equippedSlots.forEach((id, index) => {
-            if (id && itemsInventory[id] > 0) {
-                itemsInventory[id]--;
-            }
-        });
+    function deductItem(itemId) {
+      if (itemsInventory[itemId] > 0) {
+        itemsInventory[itemId]--;
         window.userData.items = itemsInventory;
         saveLocalData();
-        gameState.itemsConsumed = true;
+        syncUserDataToServer(); 
+        renderEquipment();
+      }
+    }
+
+    function playItemAnimation(x, y, itemName, glowColor) {
+      const powEl = document.createElement('div'); 
+      powEl.className = 'pow-anim'; 
+      powEl.style.position = 'absolute';
+      powEl.style.width = 'calc(100% / var(--grid-size))';
+      powEl.style.height = 'calc(100% / var(--grid-size))';
+      powEl.style.display = 'flex';
+      powEl.style.alignItems = 'center';
+      powEl.style.justifyContent = 'center';
+      powEl.style.transform = `translate(calc(${x} * 100%), calc(${y} * 100%))`; 
+      powEl.style.zIndex = 300; 
+      powEl.innerHTML = `<img src="items/${itemName}.png" style="width:180%; height:180%; filter: drop-shadow(0 0 10px ${glowColor}); animation: popOpen 0.5s;">`; 
+      el.piecesLayer.appendChild(powEl); 
+      setTimeout(() => powEl.remove(), 800);
     }
 
     function openEquipment() { renderEquipment(); document.getElementById('equipmentModal').style.display = 'flex'; }
@@ -393,11 +427,18 @@
     
     function updateActiveItems() {
       let wasStalestill = gameState.stalestillActive;
+      let wasGlidesteps = gameState.glidestepsActive;
+
       gameState.antideadActive = equippedSlots.includes('antidead');
       gameState.stalestillActive = equippedSlots.includes('stalestill');
       gameState.glidestepsActive = equippedSlots.includes('glidesteps');
+      
       if (gameState.stalestillActive && !wasStalestill) gameState.stalestillCharges = 3; 
       else if (!gameState.stalestillActive && gameState.phase !== 'play') gameState.stalestillCharges = 0; 
+      
+      if (gameState.glidestepsActive && !wasGlidesteps) gameState.glidestepsCharges = 7;
+      else if (!gameState.glidestepsActive && gameState.phase !== 'play') gameState.glidestepsCharges = 0;
+
       if (gameState.phase === 'play') drawDPad(getLegalMoves(gameState.turn));
     }
     
@@ -407,6 +448,7 @@
       unifiedAudio.win.pause(); unifiedAudio.lose.pause(); el.popup.style.display = 'none';
       updateActiveItems();
       let p2Char = getUniqueRandomChar(gameState.p1Char);
+      gameState.stalestillUsed = false;
       gameState.phase = 'place'; gameState.turn = 0; gameState.burned.clear(); gameState.startTime = Date.now();
       gameState.players = [ { name: gameState.p1Char, x: null, y: null, pose: 'idle' }, { name: p2Char, x: null, y: null, pose: 'idle' } ];
       el.p1Label.innerText = "P1: " + gameState.players[0].name.toUpperCase();
@@ -418,8 +460,10 @@
     
     function initGameOnline() {
       unifiedAudio.win.pause(); unifiedAudio.lose.pause(); el.popup.style.display = 'none';
+      gameState.stalestillUsed = false;
       gameState.burned.clear(); el.boardWrapper.style.setProperty('--grid-size', gameState.size);
       el.pieceNodes[0].classList.remove('visible'); el.pieceNodes[1].classList.remove('visible');
+      updateActiveItems();
       updateUI(); drawDPad();
     }
     
@@ -444,6 +488,7 @@
       }
       return count;
     }
+    
     function onCellClick(x, y) {
       const k = key(x, y), occ = occupiedBy(x, y);
       if (gameState.phase === 'place') {
@@ -459,14 +504,22 @@
     
     function moveCurrent(dirIndex) {
       if (gameState.phase !== 'play' || !getLegalMoves(gameState.turn).includes(dirIndex)) return;
-      let isGliding = (gameState.turn === 0 && gameState.glidestepsActive);
+      
+      let isGliding = (gameState.turn === 0 && gameState.glidestepsCharges > 0);
       const p = gameState.players[gameState.turn], d = DIRS[dirIndex];
       
       if (isGliding) {
-        while (true) {
+        if (gameState.glidestepsCharges === 7) {
+            deductItem('glidesteps');
+        }
+        gameState.glidestepsCharges--;
+        
+        let steps = 0;
+        while (steps < 7) {
           let nx = p.x + d.dx, ny = p.y + d.dy;
           if (inBounds(nx, ny) && !gameState.burned.has(key(nx, ny)) && occupiedBy(nx, ny) === -1) { 
               gameState.burned.set(key(p.x, p.y), p.name); p.x = nx; p.y = ny; 
+              steps++;
           } else break;
         }
       } else { 
@@ -475,7 +528,6 @@
       
       p.pose = 'jump'; gameState.turn = 1 - gameState.turn; 
       
-      // Efek Visual Untuk Move (Baik Local & Online)
       el.boardWrapper.classList.remove('shake-active'); void el.boardWrapper.offsetWidth; el.boardWrapper.classList.add('shake-active');
       setTimeout(() => { if (gameState.phase !== 'over') { p.pose = 'idle'; updatePiecesLayer(); } }, 350);
 
@@ -499,6 +551,12 @@
       }
 
       const statePayload = { phase: nextPhase, p1X, p1Y, p2X, p2Y, burnedArr: JSON.stringify(Array.from(gameState.burned.entries())) };
+      
+      if (gameState.pendingItemAnim) {
+          statePayload.itemAnim = gameState.pendingItemAnim;
+          gameState.pendingItemAnim = null;
+      }
+
       const opponentUid = gameState.players[1].uid;
       await window.updateOnlineGameStateCloud(activeMatchId, statePayload, opponentUid);
       if (getLegalMoves(0).length === 0) { if (gameState.antideadActive) triggerAntidead(0); else await window.finishOnlineMatchCloud(activeMatchId, opponentUid); }
@@ -508,7 +566,6 @@
       gameState.phase = 'over';
       const isWinner = window.currentUser && winnerUid === window.currentUser.uid;
       const bet = gameState.matchData.betCoin;
-      consumeItems();
       
       if (isWinner) { 
           window.userData.coins += bet; window.userData.wins += 1; 
@@ -525,9 +582,10 @@
           unifiedAudio.lose.play().catch(()=>{}); 
       }
       saveLocalData(); 
+      syncUserDataToServer();
+
       el.popup.style.display = 'flex';
       
-      // Cleanup data pada Firebase tanpa delay lama
       if (window.isFirebaseReady && activeMatchId) {
           setTimeout(async () => { 
               try { await window.fbDeleteDoc(window.fbDoc(window.fbDb, "matches", activeMatchId)); } catch(e) {} 
@@ -538,29 +596,15 @@
     function triggerAntidead(pIndex) {
       if (pIndex === 0) {
         gameState.antideadActive = false;
-        // Fix: Kurangi item antidead saat dibangkitkan untuk menutup celah ekploitasi
-        if (itemsInventory.antidead > 0) {
-            itemsInventory.antidead--;
-            window.userData.items = itemsInventory;
-            saveLocalData();
-            renderEquipment();
-        }
+        deductItem('antidead');
       }
 
       const p = gameState.players[pIndex];
-      const powEl = document.createElement('div'); 
-      powEl.className = 'pow-anim'; 
-      powEl.style.position = 'absolute';
-      powEl.style.width = 'calc(100% / var(--grid-size))';
-      powEl.style.height = 'calc(100% / var(--grid-size))';
-      powEl.style.display = 'flex';
-      powEl.style.alignItems = 'center';
-      powEl.style.justifyContent = 'center';
-      powEl.style.transform = `translate(calc(${p.x} * 100%), calc(${p.y} * 100%))`; 
-      powEl.style.zIndex = 300; 
-      powEl.innerHTML = '<img src="items/antidead.png" style="width:180%; height:180%; filter: drop-shadow(0 0 10px gold); animation: popOpen 0.5s;">'; 
-      el.piecesLayer.appendChild(powEl); 
-      setTimeout(() => powEl.remove(), 800);
+      
+      if (isOnlinePVP && pIndex === 0) {
+          gameState.pendingItemAnim = { type: 'antidead', x: p.x, y: p.y, ts: Date.now() };
+      }
+      playItemAnimation(p.x, p.y, 'antidead', 'gold');
 
       for (let dx = -1; dx <= 1; dx++) { 
         for (let dy = -1; dy <= 1; dy++) { 
@@ -588,12 +632,13 @@
       const earned = Math.floor(((J * 2) + timeBonus) * 1.0 * W);
       totalCoins += earned; 
       if (gameState.turn === 1) window.userData.wins = (window.userData.wins || 0) + 1; else window.userData.losses = (window.userData.losses || 0) + 1;
-      window.userData.coins = totalCoins; saveLocalData();
+      window.userData.coins = totalCoins; 
+      saveLocalData();
+      syncUserDataToServer();
       return earned;
     }
     
     async function showGameOverPopup() {
-      consumeItems();
       const earnedCoins = await calculateCoins(); el.popupCoinMsg.innerText = `+${earnedCoins} COINS`;
       const loserIndex = gameState.turn; let displayPlayer = gameState.players[0];
       if (loserIndex === 0) { 
@@ -651,22 +696,18 @@
     
     function useStalestill() {
         if (gameState.phase !== 'play') return;
+        
+        if (!gameState.stalestillUsed) {
+            deductItem('stalestill');
+            gameState.stalestillUsed = true;
+        }
 
-        // Animasi Stalestill dengan glow warna merah
         const p = gameState.players[0];
-        const powEl = document.createElement('div'); 
-        powEl.className = 'pow-anim'; 
-        powEl.style.position = 'absolute';
-        powEl.style.width = 'calc(100% / var(--grid-size))';
-        powEl.style.height = 'calc(100% / var(--grid-size))';
-        powEl.style.display = 'flex';
-        powEl.style.alignItems = 'center';
-        powEl.style.justifyContent = 'center';
-        powEl.style.transform = `translate(calc(${p.x} * 100%), calc(${p.y} * 100%))`;
-        powEl.style.zIndex = 300;
-        powEl.innerHTML = '<img src="items/stalestill.png" style="width:180%; height:180%; filter: drop-shadow(0 0 10px red); animation: popOpen 0.5s;">';
-        el.piecesLayer.appendChild(powEl);
-        setTimeout(() => powEl.remove(), 800);
+        
+        if (isOnlinePVP) {
+            gameState.pendingItemAnim = { type: 'stalestill', x: p.x, y: p.y, ts: Date.now() };
+        }
+        playItemAnimation(p.x, p.y, 'stalestill', 'red');
 
         gameState.turn = 1 - gameState.turn; 
         unifiedAudio.click.currentTime = 0; 
