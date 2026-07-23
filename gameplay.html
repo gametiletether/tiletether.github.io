@@ -456,16 +456,21 @@
     
     async function syncOnlineMove(keepTurn = false) {
       if(!window.isFirebaseReady) return;
-      const p1X = (gameState.isChallenger ? gameState.players[0].x : gameState.players[1].x) ?? null;
-      const p1Y = (gameState.isChallenger ? gameState.players[0].y : gameState.players[1].y) ?? null;
-      const p2X = (gameState.isChallenger ? gameState.players[1].x : gameState.players[0].x) ?? null;
-      const p2Y = (gameState.isChallenger ? gameState.players[1].y : gameState.players[0].y) ?? null;
+      const p1X = (gameState.isChallenger ? gameState.players[0].x : gameState.players[1].x);
+      const p1Y = (gameState.isChallenger ? gameState.players[0].y : gameState.players[1].y);
+      const p2X = (gameState.isChallenger ? gameState.players[1].x : gameState.players[0].x);
+      const p2Y = (gameState.isChallenger ? gameState.players[1].y : gameState.players[0].y);
       
+      const safeP1X = p1X !== null && p1X !== undefined ? p1X : null;
+      const safeP1Y = p1Y !== null && p1Y !== undefined ? p1Y : null;
+      const safeP2X = p2X !== null && p2X !== undefined ? p2X : null;
+      const safeP2Y = p2Y !== null && p2Y !== undefined ? p2Y : null;
+
       let nextPhase = gameState.phase; 
-      if (gameState.phase === 'place' && p1X !== null && p2X !== null && p1X !== undefined && p2X !== undefined) nextPhase = 'play';
+      if (gameState.phase === 'place' && safeP1X !== null && safeP2X !== null) nextPhase = 'play';
       if (gameState.phase !== 'play' && nextPhase === 'play') unifiedAudio.play.play().catch(()=>{});
       
-      const statePayload = { phase: nextPhase, p1X, p1Y, p2X, p2Y, burnedArr: JSON.stringify(Array.from(gameState.burned.entries())) };
+      const statePayload = { phase: nextPhase, p1X: safeP1X, p1Y: safeP1Y, p2X: safeP2X, p2Y: safeP2Y, burnedArr: JSON.stringify(Array.from(gameState.burned.entries())) };
       if (gameState.pendingItemAnim) { statePayload.itemAnim = gameState.pendingItemAnim; gameState.pendingItemAnim = null; }
       if (gameState.pendingSfx) { statePayload.lastSfx = gameState.pendingSfx; gameState.pendingSfx = null; }
       
@@ -586,7 +591,18 @@
       const frameNum = ANIM_FRAMES[gameState.tick % 4];
       gameState.players.forEach((p, idx) => {
         const node = el.pieceNodes[idx];
-        if (p.x !== null && p.y !== null) { node.classList.add('visible'); node.style.setProperty('--px', p.x); node.style.setProperty('--py', p.y); node.style.zIndex = 50 + p.y; const img = node.querySelector('img'); img.src = `characters/${p.name.toLowerCase()}/${p.pose === 'dead' ? 'dead.png' : `${p.pose}_${frameNum}.png`}`; img.style.width = '150%'; img.style.height = '150%'; }
+        if (p.x !== null && p.y !== null && p.x !== undefined && p.y !== undefined) { 
+            node.classList.add('visible'); 
+            node.style.setProperty('--px', p.x); 
+            node.style.setProperty('--py', p.y); 
+            node.style.zIndex = 50 + p.y; 
+            const img = node.querySelector('img'); 
+            img.src = `characters/${p.name.toLowerCase()}/${p.pose === 'dead' ? 'dead.png' : `${p.pose}_${frameNum}.png`}`; 
+            img.style.width = '150%'; 
+            img.style.height = '150%'; 
+        } else {
+            node.classList.remove('visible');
+        }
       });
     }
     
