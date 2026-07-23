@@ -304,7 +304,7 @@
         try {
             const { initializeApp } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js");
             const { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js");
-            const { getFirestore, doc, setDoc } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
+            const { getFirestore, doc, setDoc, updateDoc } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
             
             const app = initializeApp(firebaseConfig);
             auth = getAuth(app);
@@ -312,22 +312,30 @@
 
             window.signOutMethod = signOut;
 
-            onAuthStateChanged(auth, (user) => {
+            onAuthStateChanged(auth, async (user) => {
                 if (user && !appLoaded) {
                     appLoaded = true;
+                    // Update status isOnline ke true saat login berhasil
+                    try {
+                        await updateDoc(doc(db, "users", user.uid), { isOnline: true });
+                    } catch (e) {
+                        console.log("Gagal update status online", e);
+                    }
                     startLoadingSequence();
                 }
             });
             
             window.registerUserFB = async (email, password, username, age, avatarUrl) => {
                 const res = await createUserWithEmailAndPassword(auth, email, password);
+                
+                // PERBAIKAN: Koin awal harus 100 agar sesuai dengan Rules Firebase
                 const initialData = { 
                     uid: res.user.uid, 
                     username: username, 
                     email: email, 
                     age: parseInt(age), 
-                    profilePic: avatarUrl, // Menyimpan avatar ke profil awal
-                    coins: 1000, 
+                    profilePic: avatarUrl,
+                    coins: 100, // <--- Diperbarui dari 1000 menjadi 100
                     wins: 0, 
                     losses: 0, 
                     items: { antidead: 0, stalestill: 0, glidesteps: 0 }, 
@@ -393,10 +401,9 @@
 
         // Fungsi Menggabungkan Loading AAA
         function startLoadingSequence() {
-            // Sembunyikan UI Auth
+            // (Sisa fungsi startLoadingSequence sama persis dengan kode Anda)
             document.getElementById('auth-wrapper').style.display = 'none';
             
-            // Siapkan UI Loading dan Latar Belakang (Reset jika sebelumnya log out)
             const loaderWrapper = document.getElementById('loader-wrapper');
             const bgContainer = document.getElementById('bg-container');
             const iframe = document.getElementById('game-frame');
@@ -408,7 +415,6 @@
             bgContainer.style.display = 'block';
             bgContainer.style.opacity = '1';
 
-            // Muat Iframe di latar belakang
             iframe.src = "mainmenu.html";
 
             const progressBar = document.getElementById('progress-bar');
@@ -446,7 +452,6 @@
                 if (progress < 100) {
                     requestAnimationFrame(updateProgress);
                 } else {
-                    // Transisi setelah loading selesai
                     setTimeout(() => {
                         loaderWrapper.classList.add('fade-out');
                         bgContainer.style.opacity = '0';
@@ -459,15 +464,26 @@
                     }, 300);
                 }
             }
-            // Jalankan animasi loading
             requestAnimationFrame(updateProgress);
         }
 
         // Listener Logout dari dalam Iframe
         window.addEventListener('message', async (event) => {
             if (event.data === 'DO_LOGOUT') {
-                if (window.signOutMethod && auth && auth.currentUser) {
-                    await window.signOutMethod(auth);
+                if (auth && auth.currentUser) {
+                    const { updateDoc, doc } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
+                    // Update ke offline SEBELUM log out agar Rules tetap mengizinkan perubahan ini
+                    try {
+                        await updateDoc(doc(db, "users", auth.currentUser.uid), {
+                            isOnline: false
+                        });
+                    } catch (e) {
+                        console.error("Gagal mengupdate isOnline ke false", e);
+                    }
+                    
+                    if (window.signOutMethod) {
+                        await window.signOutMethod(auth);
+                    }
                 }
                 appLoaded = false;
                 

@@ -5,16 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>TileTether - Gameplay</title>
   <style>
-    :root {
-      --gold: #ffd700; --gold-dark: #d4af37;
-      --brown: #8b4513; --brown-dark: #5c2a0d;
-      --green: #4caf50; --green-dark: #2e7d32;
-      --blue: #1976d2; --blue-dark: #0d47a1;
-      --red: #d32f2f; --red-dark: #b71c1c;
-      --text: #fff;
-      --shadow: 0 4px 0 rgba(0,0,0,.55), 0 10px 24px rgba(0,0,0,.3);
-      --bg-img: url('paths/path_01.png');
-    }
+    :root { --gold: #ffd700; --gold-dark: #d4af37; --brown: #8b4513; --brown-dark: #5c2a0d; --green: #4caf50; --green-dark: #2e7d32; --blue: #1976d2; --blue-dark: #0d47a1; --red: #d32f2f; --red-dark: #b71c1c; --text: #fff; --shadow: 0 4px 0 rgba(0,0,0,.55), 0 10px 24px rgba(0,0,0,.3); --bg-img: url('paths/path_01.png'); }
     * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-tap-highlight-color: transparent; }
     html, body { width: 100%; height: 100%; overflow: hidden; }
     body { font-family: "Courier New", Courier, monospace; color: var(--text); position: relative; background: radial-gradient(circle at 20% 15%, rgba(255,255,255,.15) 0 6%, transparent 7%), radial-gradient(circle at 78% 18%, rgba(255,255,255,.1) 0 4%, transparent 5%), linear-gradient(to bottom, var(--blue-dark) 0%, var(--blue) 45%, var(--green) 45.2%, var(--green-dark) 100%); }
@@ -89,7 +80,6 @@
   <audio id="sfxGlidesteps" src="audio/glidesteps.mp3"></audio>
   <audio id="sfxJump" src="audio/jump.mp3"></audio>
   <img id="stalestillImg" src="items/stalestill.png" style="display:none;">
-  
   <div id="gameView" class="view-container">
     <div id="gameScreen">
       <div class="header-bar">
@@ -119,7 +109,6 @@
         </div>
       </div>
     </div>
-    
     <div class="popup-overlay" id="chatPopup">
       <div class="popup-box" style="max-width: 320px;">
         <div class="popup-title">Kirim Pesan</div>
@@ -130,7 +119,6 @@
         </div>
       </div>
     </div>
-    
     <div class="popup-overlay" id="equipmentModal">
       <div class="popup-box" style="max-width: 320px;">
         <div class="popup-title">ITEMS</div>
@@ -151,7 +139,6 @@
         <button class="btn btn-green" onclick="closeEquipment()" style="margin-top:15px; width: 100%;">SELESAI</button>
       </div>
     </div>
-    
     <div class="popup-overlay" id="gameOverPopup">
       <div class="popup-box">
         <div class="popup-title" id="popupMsg">YOU SURVIVE</div>
@@ -164,7 +151,6 @@
         </div>
       </div>
     </div>
-    
     <div class="popup-overlay" id="rulesPopup">
       <div class="popup-box">
         <div class="popup-title" style="font-size: 16px;">Aturan Main</div>
@@ -177,7 +163,6 @@
       </div>
     </div>
   </div>
-
   <script type="module">
     const firebaseConfig = { apiKey: "AIzaSyB-lRvFDWFceXE1lloWeAP732uohRe7iLo", authDomain: "ambademo.firebaseapp.com", projectId: "ambademo", storageBucket: "ambademo.firebasestorage.app", messagingSenderId: "346919760984", appId: "1:346919760984:web:c9b102656aa020f3f2062d" };
     try {
@@ -192,25 +177,21 @@
       window.finishOnlineMatchCloud = async (matchId, winnerUid) => { await updateDoc(doc(db, "matches", matchId), { status: "finished", winnerUid: winnerUid }); };
     } catch(err) { console.warn("Firebase Init Offline Fallback Active:", err); window.isFirebaseReady = false; }
   </script>
-
   <script>
     const PATH_NAMES = { path_01: 'Default', path_02: 'Grass', path_03: 'Water', path_04: 'Abyss', path_05: 'Swamp', path_06: 'Winter', path_07: 'Trail', path_08: 'Clockwork', path_09: 'Blossom', path_10: 'Barren', path_11: 'Dungeon', path_12: 'Arcane', path_13: 'Palace', path_14: 'Void', path_15: 'Fungal', path_16: 'Ruins', path_17: 'Cyber' };
     const ITEM_METADATA = { antidead: { name: "Antidead", img: "items/antidead.png", max: 3 }, stalestill: { name: "Stalestill", img: "items/stalestill.png", max: 5 }, glidesteps: { name: "Glidesteps", img: "items/glidesteps.png", max: 10 } };
     const DISPLAY_CHARACTERS = ['bob', 'alice', 'dany', 'choco', 'greg', 'eva', 'fifi', 'ipul', 'jessy'];
     const ANIM_FRAMES = [1, 2, 3, 2]; 
     const DIRS = [ { dx: -1, dy: -1 }, { dx: 0, dy: -1 }, { dx: 1, dy: -1 }, { dx: -1, dy: 0 }, { dx: 1, dy: 0 }, { dx: -1, dy: 1 }, { dx: 0, dy: 1 }, { dx: 1, dy: 1 } ];
-    
     let isOnlinePVP = false;
     let activeMatchId = null;
     let matchListenerUnsub = null;
-
     function loadLocalSave() {
       const saved = localStorage.getItem('tiletether_local_data');
       if (saved) { try { return JSON.parse(saved); } catch(e) {} }
-      return { username: 'GUEST', coins: 1000, wins: 0, losses: 0, items: { antidead: 0, stalestill: 0, glidesteps: 0 } };
+      return { username: 'GUEST', coins: 100, wins: 0, losses: 0, items: { antidead: 0, stalestill: 0, glidesteps: 0 } };
     }
     function saveLocalData() { if (window.userData) localStorage.setItem('tiletether_local_data', JSON.stringify(window.userData)); }
-    
     async function syncUserDataToServer() {
       if (window.isFirebaseReady && window.currentUser) {
         try {
@@ -218,26 +199,20 @@
         } catch(err) { console.warn("Gagal sync data pengguna ke server", err); }
       }
     }
-
     window.userData = loadLocalSave();
     let totalCoins = window.userData.coins || 0;
     let itemsInventory = window.userData.items || { antidead: 0, stalestill: 0, glidesteps: 0 };
-    
     const unifiedAudio = {
       play: document.getElementById('bgmPlay'), click: document.getElementById('sfxClick'), win: document.getElementById('sfxWin'), lose: document.getElementById('sfxLose'),
       chat: document.getElementById('sfxChat'), antidead: document.getElementById('sfxAntidead'), stalestill: document.getElementById('sfxStalestill'), glidesteps: document.getElementById('sfxGlidesteps'), jump: document.getElementById('sfxJump')
     };
-    
     document.addEventListener('click', (e) => { if (e.target.closest('.btn, .header-btn, .cell, #dpad')) { unifiedAudio.click.currentTime = 0; unifiedAudio.click.play().catch(()=>{}); } });
-
     const AI_PERSONALITIES = { bob: { proximityWeight: -2, spaceWeight: 5, randomness: 0.1 }, greg: { proximityWeight: 4, spaceWeight: 1, randomness: 0.1 }, eva: { proximityWeight: -1, spaceWeight: 4, randomness: 0.0 }, choco: { proximityWeight: 0, spaceWeight: 1, randomness: 0.8 }, jessy: { proximityWeight: 1, spaceWeight: 3, randomness: 0.2 }, default: { proximityWeight: 0, spaceWeight: 2, randomness: 0.4 } };
     let equippedSlots = [null, null, null];
     let gameState = {};
     let gameTickInterval = null;
-    
     const el = { board: document.getElementById('board'), boardWrapper: document.getElementById('boardWrapper'), piecesLayer: document.getElementById('piecesLayer'), pieceNodes: [document.getElementById('piece0'), document.getElementById('piece1')], dpad: document.getElementById('dpad'), status: document.getElementById('status'), turnInfo: document.getElementById('turnInfo'), p1Label: document.getElementById('p1ScoreLabel'), p2Label: document.getElementById('p2ScoreLabel'), popup: document.getElementById('gameOverPopup'), popupMsg: document.getElementById('popupMsg'), popupImg: document.getElementById('popupCharImg'), popupCoinMsg: document.getElementById('popupCoinMsg') };
     const ctx = el.dpad.getContext('2d'); ctx.imageSmoothingEnabled = false;
-
     function drawHeaderIcons() {
       const cMenu = document.getElementById('iconMenu').getContext('2d'); cMenu.imageSmoothingEnabled = false; cMenu.clearRect(0,0,28,28); cMenu.fillStyle = '#ffffff'; cMenu.beginPath(); cMenu.moveTo(14, 4); cMenu.lineTo(3, 14); cMenu.lineTo(25, 14); cMenu.closePath(); cMenu.fill(); cMenu.lineWidth = 2; cMenu.strokeStyle = '#000000'; cMenu.stroke(); cMenu.fillRect(6, 13, 16, 11); cMenu.strokeRect(6, 13, 16, 11); cMenu.fillStyle = '#000000'; cMenu.fillRect(11, 17, 6, 7);
       const cChat = document.getElementById('iconChat').getContext('2d'); cChat.imageSmoothingEnabled = false; cChat.clearRect(0,0,28,28); cChat.fillStyle = '#ffffff'; cChat.beginPath(); if(cChat.roundRect) { cChat.roundRect(4,6,20,12,3); } else { cChat.rect(4,6,20,12); } cChat.fill(); cChat.lineWidth = 2; cChat.strokeStyle = '#000000'; cChat.stroke(); cChat.beginPath(); cChat.moveTo(8,18); cChat.lineTo(8,23); cChat.lineTo(13,18); cChat.fill(); cChat.stroke(); cChat.fillStyle = '#000000'; cChat.fillRect(8, 10, 12, 2); cChat.fillRect(8, 13, 8, 2);
@@ -245,10 +220,8 @@
       const cRules = document.getElementById('iconRules').getContext('2d'); cRules.imageSmoothingEnabled = false; cRules.clearRect(0,0,28,28); cRules.fillStyle = '#ffffff'; cRules.font = 'bold 22px "Courier New", monospace'; cRules.textAlign = 'center'; cRules.textBaseline = 'middle'; cRules.lineWidth = 3; cRules.strokeStyle = '#000000'; cRules.strokeText('?', 14, 15); cRules.fillText('?', 14, 15);
     }
     drawHeaderIcons();
-
     function openChat() { document.getElementById('chatPopup').style.display = 'flex'; document.getElementById('chatInput').focus(); }
     function closeChat() { document.getElementById('chatPopup').style.display = 'none'; document.getElementById('chatInput').value = ''; }
-    
     function displayChatBubble(pIdx, text) {
       unifiedAudio.chat.currentTime = 0; unifiedAudio.chat.play().catch(()=>{});
       const node = el.pieceNodes[pIdx]; if(!node) return;
@@ -261,7 +234,6 @@
       closeBtn.onpointerdown = (e) => { e.stopPropagation(); bubble.remove(); };
       bubble.appendChild(closeBtn); node.appendChild(bubble);
     }
-    
     async function sendChat() {
       const input = document.getElementById('chatInput'); const text = input.value.trim(); if(!text) return;
       closeChat(); displayChatBubble(0, text);
@@ -271,7 +243,6 @@
         setTimeout(() => { const aiReplies = ["Haha!", "Ayo lanjut!", "Hati-hati...", "Hmm, menarik."]; displayChatBubble(1, aiReplies[Math.floor(Math.random() * aiReplies.length)]); }, 1500);
       }
     }
-
     window.onload = () => {
       const params = new URLSearchParams(window.location.search); const mode = params.get('mode');
       const p1Char = window.userData.selectedChar || 'bob'; const pathTheme = window.userData.selectedPath || 'path_01';
@@ -287,14 +258,11 @@
         let config = { p1Char: p1Char, pathTheme: pathTheme, ...itemsToActive }; bootGameplay(config);
       }
     };
-
     function exitToMenu() { stopGameLoop(); if (matchListenerUnsub) matchListenerUnsub(); window.location.href = "mainmenu.html"; }
-
     function bootGameplay(config) {
         gameState = { size: 10, phase: 'place', turn: 0, burned: new Map(), players: [], tick: 0, p1Char: config.p1Char, pathTheme: config.pathTheme, startTime: 0, antideadActive: false, glidestepsActive: false, glidestepsCharges: 0, stalestillActive: false, stalestillCharges: 0, stalestillUsed: false, lastChatTs: 0, lastSfxTs: 0, pendingSfx: null };
         initGame(); if(gameTickInterval) clearInterval(gameTickInterval); gameTickInterval = setInterval(gameLoopTick, 150);
     }
-
     function bootOnlineGameplay(matchData, isChallenger) {
       document.getElementById('btnLanjut').style.display = 'none';
       if(!window.isFirebaseReady) { alert("Firebase disconnected."); exitToMenu(); return; }
@@ -302,7 +270,6 @@
       const oppChar = isChallenger ? matchData.targetChar : matchData.challengerChar;
       gameState.players = [ { name: window.userData.selectedChar || 'bob', x: null, y: null, pose: 'idle', uid: window.currentUser ? window.currentUser.uid : 'guest' }, { name: oppChar || 'alice', x: null, y: null, pose: 'idle', uid: isChallenger ? matchData.targetUid : matchData.challengerUid } ];
       initGameOnline(); if(gameTickInterval) clearInterval(gameTickInterval); gameTickInterval = setInterval(gameLoopTick, 150);
-      
       matchListenerUnsub = window.listenOnlineMatchState(activeMatchId, (data) => {
         if (data.lastChat && data.lastChat.ts > (gameState.lastChatTs || 0)) {
            gameState.lastChatTs = data.lastChat.ts;
@@ -331,19 +298,14 @@
         if (data.status === "finished") handleOnlineGameFinished(data.winnerUid);
       });
     }
-
     function stopGameLoop() { if (gameTickInterval) clearInterval(gameTickInterval); }
     function gameLoopTick() { gameState.tick++; updatePiecesLayer(); if (gameState.phase === 'over' && el.popup.style.display === 'flex' && !el.popupMsg.innerText.includes("DEAD")) { let winP = gameState.players[0]; el.popupImg.src = `characters/${winP.name.toLowerCase()}/jump_${ANIM_FRAMES[gameState.tick % 4]}.png`; } }
-
     function deductItem(itemId) { if (itemsInventory[itemId] > 0) { itemsInventory[itemId]--; window.userData.items = itemsInventory; saveLocalData(); syncUserDataToServer(); renderEquipment(); } }
-
     function playItemAnimation(x, y, itemName, glowColor) {
       const powEl = document.createElement('div'); powEl.className = 'pow-anim'; powEl.style.position = 'absolute'; powEl.style.width = 'calc(100% / var(--grid-size))'; powEl.style.height = 'calc(100% / var(--grid-size))'; powEl.style.display = 'flex'; powEl.style.alignItems = 'center'; powEl.style.justifyContent = 'center'; powEl.style.transform = `translate(calc(${x} * 100%), calc(${y} * 100%))`; powEl.style.zIndex = 300; powEl.innerHTML = `<img src="items/${itemName}.png" style="width:180%; height:180%; filter: drop-shadow(0 0 10px ${glowColor}); animation: popOpen 0.5s;">`; el.piecesLayer.appendChild(powEl); setTimeout(() => powEl.remove(), 800);
     }
-
     function openEquipment() { renderEquipment(); document.getElementById('equipmentModal').style.display = 'flex'; }
     function closeEquipment() { document.getElementById('equipmentModal').style.display = 'none'; updateActiveItems(); }
-    
     function renderEquipment() {
       for (let i = 0; i < 3; i++) {
         const slotEl = document.getElementById(`eqSlot-${i}`);
@@ -359,10 +321,8 @@
         }
       });
     }
-    
     function equipItem(id) { let emptyIdx = equippedSlots.indexOf(null); if (emptyIdx === -1) return; let equippedCount = equippedSlots.filter(s => s === id).length; if (itemsInventory[id] - equippedCount <= 0) return alert("Item di inventory tidak cukup!"); equippedSlots[emptyIdx] = id; renderEquipment(); updateActiveItems(); }
     function unequipItem(index) { if (equippedSlots[index]) { equippedSlots[index] = null; renderEquipment(); updateActiveItems(); } }
-    
     function updateActiveItems() {
       let wasStalestill = gameState.stalestillActive, wasGlidesteps = gameState.glidestepsActive;
       gameState.antideadActive = equippedSlots.includes('antidead'); gameState.stalestillActive = equippedSlots.includes('stalestill'); gameState.glidestepsActive = equippedSlots.includes('glidesteps');
@@ -370,13 +330,10 @@
       if (gameState.glidestepsActive && !wasGlidesteps) gameState.glidestepsCharges = 7; else if (!gameState.glidestepsActive && gameState.phase !== 'play') gameState.glidestepsCharges = 0;
       if (gameState.phase === 'play') drawDPad(getLegalMoves(gameState.turn));
     }
-    
     function triggerPlayPhase() { gameState.phase = 'play'; gameState.turn = 0; unifiedAudio.play.play().catch(()=>{}); updateUI(); }
-    
     function initGame() {
       unifiedAudio.win.pause(); unifiedAudio.lose.pause(); el.popup.style.display = 'none'; updateActiveItems(); let p2Char = getUniqueRandomChar(gameState.p1Char); gameState.stalestillUsed = false; gameState.phase = 'place'; gameState.turn = 0; gameState.burned.clear(); gameState.startTime = Date.now(); gameState.players = [ { name: gameState.p1Char, x: null, y: null, pose: 'idle' }, { name: p2Char, x: null, y: null, pose: 'idle' } ]; el.p1Label.innerText = "P1: " + gameState.players[0].name.toUpperCase(); el.p2Label.innerText = "AI: " + gameState.players[1].name.toUpperCase(); el.boardWrapper.style.setProperty('--grid-size', gameState.size); el.pieceNodes[0].classList.remove('visible'); el.pieceNodes[1].classList.remove('visible'); updateUI(); drawDPad();
     }
-    
     function initGameOnline() { unifiedAudio.win.pause(); unifiedAudio.lose.pause(); el.popup.style.display = 'none'; gameState.stalestillUsed = false; gameState.burned.clear(); el.boardWrapper.style.setProperty('--grid-size', gameState.size); el.pieceNodes[0].classList.remove('visible'); el.pieceNodes[1].classList.remove('visible'); updateActiveItems(); updateUI(); drawDPad(); }
     function getUniqueRandomChar(excludeChar) { const available = DISPLAY_CHARACTERS.filter(c => c !== excludeChar); return available[Math.floor(Math.random() * available.length)]; }
     function key(x, y) { return `${x},${y}`; }
@@ -384,18 +341,15 @@
     function occupiedBy(x, y) { return gameState.players.findIndex(p => p.x === x && p.y === y); }
     function getLegalMoves(pIndex) { const p = gameState.players[pIndex]; if (p.x === null) return []; let moves = []; DIRS.forEach((d, index) => { const nx = p.x + d.dx, ny = p.y + d.dy; if (inBounds(nx, ny) && !gameState.burned.has(key(nx, ny)) && occupiedBy(nx, ny) === -1) moves.push(index); }); return moves; }
     function countAvailableSpace(startX, startY) { let visited = new Set(), queue = [[startX, startY]], count = 0; visited.add(`${startX},${startY}`); while(queue.length > 0 && count < 15) { let [cx, cy] = queue.shift(); count++; for (let d of DIRS) { let nx = cx + d.dx, ny = cy + d.dy, k = key(nx, ny); if (inBounds(nx, ny) && !gameState.burned.has(k) && occupiedBy(nx, ny) === -1 && !visited.has(k)) { visited.add(k); queue.push([nx, ny]); } } } return count; }
-    
     function onCellClick(x, y) {
       const k = key(x, y), occ = occupiedBy(x, y);
       if (gameState.phase === 'place') { if (gameState.burned.has(k) || occ !== -1 || gameState.turn !== 0) return; const p = gameState.players[gameState.turn]; p.x = x; p.y = y; gameState.burned.set(k, p.name); if (isOnlinePVP) syncOnlineMove(); else { gameState.turn = 1; updateUI(); setTimeout(aiPlace, 500); } }
       else if (gameState.phase === 'play') { if (gameState.turn !== 0) return; const legalMoves = getLegalMoves(gameState.turn); for (let dirIdx of legalMoves) { if (gameState.players[gameState.turn].x + DIRS[dirIdx].dx === x && gameState.players[gameState.turn].y + DIRS[dirIdx].dy === y) { moveCurrent(dirIdx); break; } } }
     }
-    
     function moveCurrent(dirIndex) {
       if (gameState.phase !== 'play' || !getLegalMoves(gameState.turn).includes(dirIndex)) return;
       let isGliding = (gameState.turn === 0 && gameState.glidestepsCharges > 0);
       const p = gameState.players[gameState.turn], d = DIRS[dirIndex];
-      
       if (isGliding) {
         unifiedAudio.glidesteps.currentTime = 0; unifiedAudio.glidesteps.play().catch(()=>{});
         if (isOnlinePVP) gameState.pendingSfx = { name: 'glidesteps', ts: Date.now() };
@@ -416,7 +370,6 @@
       setTimeout(() => { if (gameState.phase !== 'over') { p.pose = 'idle'; updatePiecesLayer(); } }, 350);
       if (isOnlinePVP) { syncOnlineMove(); updateUI(); } else { checkWin(); updateUI(); if (gameState.phase === 'play' && gameState.turn === 1) setTimeout(aiMove, 600); }
     }
-    
     async function syncOnlineMove() {
       if(!window.isFirebaseReady) return;
       const p1X = gameState.isChallenger ? gameState.players[0].x : gameState.players[1].x, p1Y = gameState.isChallenger ? gameState.players[0].y : gameState.players[1].y; const p2X = gameState.isChallenger ? gameState.players[1].x : gameState.players[0].x, p2Y = gameState.isChallenger ? gameState.players[1].y : gameState.players[0].y;
@@ -428,7 +381,6 @@
       const opponentUid = gameState.players[1].uid; await window.updateOnlineGameStateCloud(activeMatchId, statePayload, opponentUid);
       if (getLegalMoves(0).length === 0) { if (gameState.antideadActive) triggerAntidead(0); else await window.finishOnlineMatchCloud(activeMatchId, opponentUid); }
     }
-    
     async function handleOnlineGameFinished(winnerUid) {
       gameState.phase = 'over'; const isWinner = window.currentUser && winnerUid === window.currentUser.uid; const bet = gameState.matchData.betCoin;
       if (isWinner) { window.userData.coins += bet; window.userData.wins += 1; el.popupMsg.innerText = "YOU SURVIVE (MENANG!)"; el.popupCoinMsg.innerText = `+${bet} COINS`; el.popupImg.style.display = 'block'; unifiedAudio.win.play().catch(()=>{}); } 
@@ -436,7 +388,6 @@
       saveLocalData(); syncUserDataToServer(); el.popup.style.display = 'flex';
       if (window.isFirebaseReady && activeMatchId) { setTimeout(async () => { try { await window.fbDeleteDoc(window.fbDoc(window.fbDb, "matches", activeMatchId)); } catch(e) {} }, 1000); }
     }
-    
     function triggerAntidead(pIndex) {
       unifiedAudio.antidead.currentTime = 0; unifiedAudio.antidead.play().catch(()=>{});
       if (pIndex === 0) { gameState.antideadActive = false; deductItem('antidead'); }
@@ -446,7 +397,6 @@
       for (let dx = -1; dx <= 1; dx++) { for (let dy = -1; dy <= 1; dy++) { let k = key(p.x + dx, p.y + dy); if (gameState.burned.has(k)) gameState.burned.delete(k); } }
       gameState.turn = 0; updateUI(); if (isOnlinePVP) syncOnlineMove();
     }
-    
     function checkWin() {
       if (getLegalMoves(gameState.turn).length === 0) {
         if (gameState.turn === 0 && gameState.antideadActive) return triggerAntidead(0);
@@ -455,35 +405,29 @@
         setTimeout(showGameOverPopup, 400);
       }
     }
-    
     async function calculateCoins() {
       let J = gameState.burned.size; const t = Math.floor((Date.now() - gameState.startTime) / 1000); const W = (gameState.turn === 0) ? 0.25 : 1.0, timeBonus = Math.max(0, 120 - t) * 0.5; const earned = Math.floor(((J * 2) + timeBonus) * 1.0 * W);
       totalCoins += earned; if (gameState.turn === 1) window.userData.wins = (window.userData.wins || 0) + 1; else window.userData.losses = (window.userData.losses || 0) + 1;
       window.userData.coins = totalCoins; saveLocalData(); syncUserDataToServer(); return earned;
     }
-    
     async function showGameOverPopup() {
       const earnedCoins = await calculateCoins(); el.popupCoinMsg.innerText = `+${earnedCoins} COINS`; const loserIndex = gameState.turn; let displayPlayer = gameState.players[0];
       if (loserIndex === 0) { el.popupMsg.innerText = "You Dead"; el.popupImg.style.display = 'none'; } else { el.popupMsg.innerText = "You Survive"; el.popupImg.style.display = 'block'; el.popupImg.src = `characters/${displayPlayer.name.toLowerCase()}/jump_${ANIM_FRAMES[gameState.tick % 4]}.png`; }
       el.popup.style.display = 'flex';
     }
-    
     function handlePopupChoice(choice) { if (choice === 'yeah') { if(isOnlinePVP) exitToMenu(); else initGame(); } else exitToMenu(); }
     function aiPlace() { placeRandomAI(); triggerPlayPhase(); }
-    
     function placeRandomAI() {
       let placed = false, attempts = 0;
       while(!placed && attempts < 100) { attempts++; let rx = Math.floor(Math.random() * gameState.size), ry = Math.floor(Math.random() * gameState.size); if(!gameState.burned.has(key(rx,ry)) && occupiedBy(rx,ry) === -1 && Math.abs(rx - gameState.players[0].x) + Math.abs(ry - gameState.players[0].y) > 2) { gameState.players[1].x = rx; gameState.players[1].y = ry; gameState.burned.set(key(rx,ry), gameState.players[1].name); placed = true; } }
       if(!placed) for(let x=0; x<gameState.size; x++) for(let y=0; y<gameState.size; y++) if(!gameState.burned.has(key(x,y)) && occupiedBy(x,y) === -1) { gameState.players[1].x = x; gameState.players[1].y = y; gameState.burned.set(key(x,y), gameState.players[1].name); return; }
     }
-    
     function aiMove() {
       if(gameState.phase !== 'play' || gameState.turn !== 1) return;
       const moves = getLegalMoves(1); if(moves.length === 0) return; const aiChar = gameState.players[1].name.toLowerCase(), human = gameState.players[0], ai = gameState.players[1]; const p = AI_PERSONALITIES[aiChar] || AI_PERSONALITIES['default'];
       let bestMoveIndex = moves.map(i => { const nx = ai.x + DIRS[i].dx, ny = ai.y + DIRS[i].dy; return { index: i, score: (Math.max(Math.abs(nx - human.x), Math.abs(ny - human.y)) * p.proximityWeight) + (countAvailableSpace(nx, ny) * p.spaceWeight) + (Math.random() * 20 * p.randomness) }; }).sort((a, b) => b.score - a.score)[0].index;
       moveCurrent(bestMoveIndex);
     }
-    
     function drawDPad(legalMoves = []) {
       const cw = el.dpad.width, ch = el.dpad.height, cx = cw / 2, cy = ch / 2; ctx.clearRect(0, 0, cw, ch);
       ctx.beginPath(); ctx.arc(cx, cy, cw/2 - 4, 0, Math.PI * 2); ctx.fillStyle = '#5c2a0d'; ctx.fill(); ctx.lineWidth = 4; ctx.strokeStyle = '#000000'; ctx.stroke();
@@ -500,7 +444,6 @@
         ctx.fillStyle = isLegal ? '#fff' : '#8b4513'; ctx.font = `bold ${Math.floor(cw * 0.09)}px Arial`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(d.label, bx, by + 2);
       });
     }
-    
     function useStalestill() {
         if (gameState.phase !== 'play') return;
         unifiedAudio.stalestill.currentTime = 0; unifiedAudio.stalestill.play().catch(()=>{});
@@ -511,7 +454,6 @@
         gameState.turn = 1 - gameState.turn; unifiedAudio.click.currentTime = 0; unifiedAudio.click.play().catch(()=>{});
         if (isOnlinePVP) syncOnlineMove(); else { checkWin(); updateUI(); if (gameState.phase === 'play' && gameState.turn === 1) setTimeout(aiMove, 600); }
     }
-    
     function updateUI() {
       el.board.style.backgroundImage = `url('paths/${gameState.pathTheme}.png')`; el.board.style.gridTemplateColumns = `repeat(${gameState.size}, 1fr)`; el.board.style.gridTemplateRows = `repeat(${gameState.size}, 1fr)`; el.board.innerHTML = '';
       const validKeys = new Set();
@@ -527,7 +469,6 @@
       else if (gameState.phase === 'over') { el.turnInfo.innerHTML = `<span style="color: var(--green);">GAME OVER</span>`; el.status.innerText = `${gameState.turn === 0 ? "LAWAN" : "KAMU"} MENANG!`; }
       drawDPad(gameState.phase === 'play' ? getLegalMoves(gameState.turn) : []);
     }
-    
     function updatePiecesLayer() {
       const frameNum = ANIM_FRAMES[gameState.tick % 4];
       gameState.players.forEach((p, idx) => {
@@ -535,7 +476,6 @@
         if (p.x !== null && p.y !== null) { node.classList.add('visible'); node.style.setProperty('--px', p.x); node.style.setProperty('--py', p.y); node.style.zIndex = 50 + p.y; const img = node.querySelector('img'); img.src = `characters/${p.name.toLowerCase()}/${p.pose === 'dead' ? 'dead.png' : `${p.pose}_${frameNum}.png`}`; img.style.width = '150%'; img.style.height = '150%'; }
       });
     }
-    
     el.dpad.addEventListener('click', (e) => {
       if (gameState.phase !== 'play' || gameState.turn !== 0) return;
       const rect = el.dpad.getBoundingClientRect(), scaleX = el.dpad.width / rect.width, scaleY = el.dpad.height / rect.height;
@@ -545,7 +485,6 @@
       const sector = Math.floor(((angle + Math.PI / 8) % (Math.PI * 2)) / (Math.PI / 4)), sectorToIdx = [4, 7, 6, 5, 3, 0, 1, 2], dIdx = sectorToIdx[sector];
       if (dIdx !== undefined) moveCurrent(dIdx);
     });
-    
     document.getElementById('stalestillImg').onload = () => { if(gameState.phase === 'play') drawDPad(getLegalMoves(gameState.turn)); };
   </script>
 </body>
